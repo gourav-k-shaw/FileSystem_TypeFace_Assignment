@@ -38,13 +38,29 @@ Built as a **full-stack project** using **Spring Boot (Java)** for the backend a
 ---
 
 ## 📂 Project Structure
+## 👨‍💻 Development
+
+### Project Structure
+
+```
 file-system-app/
-├── backend/ # Spring Boot backend
-├── frontend/ # React frontend
-└── README.md
-
----
-
+├── demo/                          # Spring Boot backend
+│   ├── src/
+│   │   └── main/
+│   │       ├── java/             # Java source code
+│   │       └── resources/        # Configuration files
+│   ├── docker-compose.yaml       # PostgreSQL setup
+│   ├── pom.xml                   # Maven dependencies
+│   └── uploads/                  # File storage directory
+│
+└── frontend/                     # React frontend
+    ├── src/
+    │   ├── components/           # React components
+    │   ├── store/                # Zustand state management
+    │   └── App.jsx               # Main app component
+    ├── package.json              # npm dependencies
+    └── vite.config.js            # Vite configuration
+```
 
 ---
 
@@ -267,32 +283,6 @@ http://localhost:8080/api/files
 - File metadata is persisted in PostgreSQL
 - The application supports txt, png, jpg, and json file types
 - Maximum file size is determined by Spring Boot defaults (1MB by default)
-
----
-
-## 👨‍💻 Development
-
-### Project Structure
-
-```
-file-system-app/
-├── demo/                          # Spring Boot backend
-│   ├── src/
-│   │   └── main/
-│   │       ├── java/             # Java source code
-│   │       └── resources/        # Configuration files
-│   ├── docker-compose.yaml       # PostgreSQL setup
-│   ├── pom.xml                   # Maven dependencies
-│   └── uploads/                  # File storage directory
-│
-└── frontend/                     # React frontend
-    ├── src/
-    │   ├── components/           # React components
-    │   ├── store/                # Zustand state management
-    │   └── App.jsx               # Main app component
-    ├── package.json              # npm dependencies
-    └── vite.config.js            # Vite configuration
-```
 
 ---
 
