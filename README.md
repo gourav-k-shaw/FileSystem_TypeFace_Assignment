@@ -38,4 +38,34 @@ Built as a **full-stack project** using **Spring Boot (Java)** for the backend a
 ---
 
 ## 📂 Project Structure
+file-system-app/
+├── backend/ # Spring Boot backend
+├── frontend/ # React frontend
+└── README.md
+
+---
+
+
+---
+
+## 🚀 Getting Started (Run Locally)
+
+### ✅ Prerequisites
+
+Make sure the following are installed on your system:
+
+- Java **17+**
+- Node.js **20.19+** or **22+**
+- Docker & Docker Compose
+- Git
+
+---
+
+## 🔧 Backend Setup
+
+### 1️⃣ Navigate to backend folder
+
+```bash
+cd backend
+docker-compose up -d
 
