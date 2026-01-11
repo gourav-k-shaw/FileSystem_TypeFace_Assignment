@@ -1,0 +1,18 @@
+# === Backend ===
+backend/target/
+backend/uploads/
+backend/.mvn/
+backend/*.log
+
+# === Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# === OS / Editor ===
+.DS_Store
+.vscode/
+.idea/
+
+# === Docker ===
+*.pid
