@@ -1,9 +1,13 @@
 package com.example.filesys.demo.service;
 
 import com.example.filesys.demo.dto.FileResponseDto;
+import com.example.filesys.demo.dto.VirusScanResult;
 import com.example.filesys.demo.entity.FileEntity;
+import com.example.filesys.demo.exception.VirusScannerUnavailableException;
 import com.example.filesys.demo.repository.FileRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,37 +23,81 @@ import java.nio.file.Path;
 @Service
 public class FileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
+
     private final FileStorageService fileStorageService;
+    private final VirusScanService virusScanService;
     private final FileRepository fileRepository;
 
     public FileService(FileStorageService fileStorageService,
+            VirusScanService virusScanService,
             FileRepository fileRepository) {
         this.fileStorageService = fileStorageService;
+        this.virusScanService = virusScanService;
         this.fileRepository = fileRepository;
     }
 
     public FileResponseDto uploadFile(MultipartFile file) {
 
-        // 1. Store file on disk
-        String storagePath = fileStorageService.storeFile(file);
+        // 1. First, check if virus scanner is available (fail-safe)
+        if (!virusScanService.isAvailable()) {
+            logger.error("Virus scanner is unavailable, rejecting upload");
+            throw new VirusScannerUnavailableException(
+                    "Virus scanner is currently unavailable. Please try again later.");
+        }
 
-        // 2. Create metadata entity
-        FileEntity entity = new FileEntity(
-                file.getOriginalFilename(),
-                file.getContentType(),
-                file.getSize(),
-                storagePath);
+        // 2. Store file temporarily for scanning
+        Path tempFilePath = fileStorageService.storeTemporaryFile(file);
+        logger.info("File stored temporarily at: {}", tempFilePath);
 
-        // 3. Save metadata to DB
-        FileEntity saved = fileRepository.save(entity);
+        try {
+            // 3. Scan the file for viruses
+            VirusScanResult scanResult = virusScanService.scanFile(tempFilePath);
+            logger.info("Virus scan completed with status: {}", scanResult.getStatus());
 
-        // 4. Return DTO
-        return new FileResponseDto(
-                saved.getId(),
-                saved.getOriginalName(),
-                saved.getContentType(),
-                saved.getSize(),
-                saved.getUploadedAt());
+            // 4. Handle scan results
+            if (scanResult.isClean()) {
+                // File is clean - move to permanent storage
+                String permanentPath = fileStorageService.moveToPermanentStorage(tempFilePath);
+                logger.info("Clean file moved to permanent storage: {}", permanentPath);
+
+                // 5. Create metadata entity and save to DB
+                FileEntity entity = new FileEntity(
+                        file.getOriginalFilename(),
+                        file.getContentType(),
+                        file.getSize(),
+                        permanentPath);
+
+                FileEntity saved = fileRepository.save(entity);
+                logger.info("File metadata saved to database with ID: {}", saved.getId());
+
+                // 6. Return DTO
+                return new FileResponseDto(
+                        saved.getId(),
+                        saved.getOriginalName(),
+                        saved.getContentType(),
+                        saved.getSize(),
+                        saved.getUploadedAt());
+
+            } else if (scanResult.getStatus() == VirusScanResult.ScanStatus.INFECTED) {
+                // File is infected - move to quarantine
+                fileStorageService.moveToQuarantine(tempFilePath);
+                logger.warn("Infected file moved to quarantine. Threats: {}", scanResult.getMessage());
+                throw new IllegalArgumentException("File is infected: " + scanResult.getMessage());
+
+            } else {
+                // Scan error - delete temporary file
+                fileStorageService.deleteFile(tempFilePath);
+                logger.error("Virus scan failed: {}", scanResult.getMessage());
+                throw new RuntimeException("Virus scan failed: " + scanResult.getMessage());
+            }
+
+        } catch (Exception e) {
+            // Clean up temporary file on any error
+            fileStorageService.deleteFile(tempFilePath);
+            logger.error("Error during file upload process", e);
+            throw e;
+        }
     }
 
     public List<FileResponseDto> getAllFiles() {
