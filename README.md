@@ -11,6 +11,7 @@ Built as a **full-stack project** using **Spring Boot (Java)** for the backend a
 ## ✨ Features
 
 - Upload files (txt, png, jpg, json)
+- **🛡️ Virus scanning** - Files are scanned using ClamAV before storage
 - List all uploaded files
 - Download files
 - File metadata persisted in PostgreSQL
@@ -27,6 +28,7 @@ Built as a **full-stack project** using **Spring Boot (Java)** for the backend a
 - Spring Boot
 - Spring Data JPA
 - PostgreSQL (Docker)
+- ClamAV (virus scanning)
 - Local filesystem storage
 
 ### Frontend
@@ -73,6 +75,7 @@ Make sure the following are installed on your system:
 - Java **17+**
 - Node.js **20.19+** or **22+**
 - Docker & Docker Compose
+- ClamAV daemon (for virus scanning)
 - Git
 
 ---
@@ -135,7 +138,57 @@ Started DemoApplication in X.XXX seconds
 The backend will automatically:
 - Create the `uploads` directory for file storage
 - Initialize the database schema using JPA/Hibernate
+- Connect to ClamAV for virus scanning
 - Start listening on port 8080
+
+---
+
+## 🛡️ ClamAV Setup (Virus Scanning)
+
+The application uses ClamAV to scan uploaded files for viruses.
+
+### Install ClamAV
+
+**macOS:**
+```bash
+brew install clamav
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install clamav clamav-daemon
+```
+
+### Start ClamAV Daemon
+
+**macOS:**
+```bash
+# Create config file if it doesn't exist
+cp /opt/homebrew/etc/clamav/clamd.conf.sample /opt/homebrew/etc/clamav/clamd.conf
+# Edit clamd.conf and comment out "Example" line
+
+# Start the daemon
+clamd
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo systemctl start clamav-daemon
+sudo systemctl enable clamav-daemon
+```
+
+### Configuration
+
+ClamAV settings can be configured in `demo/src/main/resources/application.properties`:
+
+```properties
+clamav.host=localhost
+clamav.port=3310
+clamav.timeout=5000
+clamav.enabled=true
+```
+
+Set `clamav.enabled=false` to disable virus scanning (files will still be uploaded).
 
 ---
 
@@ -283,6 +336,7 @@ http://localhost:8080/api/files
 - File metadata is persisted in PostgreSQL
 - The application supports txt, png, jpg, and json file types
 - Maximum file size is determined by Spring Boot defaults (1MB by default)
+- **Virus Scanning**: Files are scanned before being stored. Infected files are rejected with an error message
 
 ---
 
